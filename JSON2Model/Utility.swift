@@ -25,30 +25,29 @@ class Utility {
         let modelName = name.isEmpty ? "Example" : name
         do {
             let config = Config(name: modelName, indent: "", modelType: type)
-            return try Utility.text(form: data, config: config)
+            return try Utility.textForm(data: data, config: config)
         } catch {
             return error.localizedDescription
         }
     }
     
-    
-    static func text(form data: Data, config: Config) throws -> String {
+    static func textForm(data: Data, config: Config) throws -> String {
         let object = try JSONSerialization.jsonObject(with: data, options: [])
-        return text(form: object, config: config)
+        return Utility.textForm(object: object, config: config)
     }
     
-    static func text(form object: Any, config: Config) -> String {
+    static func textForm(object: Any, config: Config) -> String {
         switch object {
         case is Array<Any>:
-            return text(form: object as! [Any], config: config)
+            return Utility.textForm(array: object as! [Any], config: config)
         case is Dictionary<String, Any>:
-            return text(form: object as! [String: Any], config: config)
+            return Utility.textForm(dictinary: object as! [String: Any], config: config)
         default:
             return "Error"
         }
     }
     
-    static func text(form dictinary: [String: Any], config: Config) -> String {
+    static func textForm(dictinary: [String: Any], config: Config) -> String {
         let name = config.name
         let type = config.modelType.rawValue
         let currentIndent = config.indent
@@ -72,36 +71,16 @@ class Utility {
                 return "\(indent)let \(key): Date?"
             case is Array<Any>:
                 let subArray = value as! Array<Any>
-                guard let first = subArray.first else {
-                    return "\(indent)let \(key): [Any]?"
-                }
-                switch first {
-                case is Int:
-                    return "\(indent)let \(key): [Int]?"
-                case is String:
-                    return "\(indent)let \(key): [String]?"
-                case is Data:
-                    return "\(indent)let \(key): [Data]?"
-                case is Double:
-                    return "\(indent)let \(key): [Double]?"
-                case is Bool:
-                    return "\(indent)let \(key): [Bool]?"
-                case is Date:
-                    return "\(indent)let \(key): [Date]?"
-                default:
-                    let subConfig = Config(name: key, indent: indent, modelType: config.modelType)
-                    var subText = text(form: first, config: subConfig)
-                    subText.append("\(indent)let \(key): [\(key)]?")
-                    return subText
-                }
+                let subConfig = Config(name: key, indent: currentIndent, modelType: config.modelType)
+                return Utility.textForm(array: subArray, config: subConfig)
             case is Dictionary<String, Any>:
                 let subDict = value as! Dictionary<String, Any>
                 let subConfig = Config(name: key, indent: indent, modelType: config.modelType)
-                var subText = text(form: subDict, config: subConfig)
+                var subText = Utility.textForm(dictinary: subDict, config: subConfig)
                 subText.append("\(indent)let \(key): \(key)?")
                 return subText
             default:
-                return "\(indent)let object: Any?"
+                return "\(indent)let \(key): Any?"
             }
         }
         newText.append("\n")
@@ -112,7 +91,7 @@ class Utility {
         return newText
     }
     
-    static func text(form array: [Any], config: Config) -> String {
+    static func textForm(array: [Any], config: Config) -> String {
         let name = config.name
         let indent = config.indent + "    "
         guard let first = array.first else {
@@ -133,7 +112,7 @@ class Utility {
             return "\(indent)let \(name): [Date]?"
         default:
             let subConfig = Config(name: name, indent: indent, modelType: config.modelType)
-            var subText = text(form: first, config: subConfig)
+            var subText = Utility.textForm(object: first, config: subConfig)
             subText.append("\(indent)let \(name): [\(name)]?")
             return subText
         }
